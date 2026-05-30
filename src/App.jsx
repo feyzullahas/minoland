@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const imageMap = {
-  intro: {
-    src: '/minoyu tanıyalım.png',
-    alt: "Mino'yu tanıyalım",
-  },
   play: {
     src: '/oyunabasladansonraki.png',
     alt: 'Oyuna basla',
@@ -20,8 +16,17 @@ const imageMap = {
 }
 
 const galleryMap = {
+  introGallery: {
+    title: "Mino'yu Tanıyalım",
+    images: [
+      '/minoyutaniyalim1.jpeg',
+      '/minoyutaniyalim2.jpeg',
+      '/minoyutaniyalim3.jpeg',
+    ],
+  },
   classGallery: {
     title: 'Sınıf Kuralları',
+    gamified: true,
     folder: 's%C4%B1n%C4%B1fkurallar%C4%B1',
     files: [
       'WhatsApp Image 2026-05-30 at 16.54.36.jpeg',
@@ -33,6 +38,7 @@ const galleryMap = {
   },
   hygieneGallery: {
     title: 'Hijyen Kuralları',
+    gamified: true,
     folder: 'hijyenkurallar%C4%B1',
     files: [
       'WhatsApp Image 2026-05-30 at 16.54.36 (4).jpeg',
@@ -44,6 +50,7 @@ const galleryMap = {
   },
   communicationGallery: {
     title: 'İletişim Kuralları',
+    gamified: true,
     folder: 'ileti%C5%9Fimkurallar%C4%B1',
     files: [
       'WhatsApp Image 2026-05-30 at 16.54.37 (3).jpeg',
@@ -55,18 +62,25 @@ const galleryMap = {
   },
 }
 
-const buildGalleryImages = (folder, files) =>
-  files.map((file) => `/${folder}/${encodeURIComponent(file)}`)
+const buildGalleryImages = ({ folder, files, images }) =>
+  images ?? files.map((file) => `/${folder}/${encodeURIComponent(file)}`)
 
 function App() {
   const [activeImageKey, setActiveImageKey] = useState(null)
-  const [introZoom, setIntroZoom] = useState(1)
   const [historyStack, setHistoryStack] = useState([])
+  const [carrots, setCarrots] = useState(0)
+  const [awardedMap, setAwardedMap] = useState({})
+  const [galleryComplete, setGalleryComplete] = useState(false)
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const [carrotPulse, setCarrotPulse] = useState(false)
+  const [isCardExiting, setIsCardExiting] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const touchStartXRef = useRef(null)
   const activeImage = activeImageKey ? imageMap[activeImageKey] : null
   const activeGallery = galleryMap[activeImageKey] ?? null
-  const galleryImages = activeGallery
-    ? buildGalleryImages(activeGallery.folder, activeGallery.files)
-    : []
+  const galleryImages = activeGallery ? buildGalleryImages(activeGallery) : []
+  const isKidsGamified =
+    Boolean(activeGallery?.gamified) && historyStack.includes('kids')
 
   useEffect(() => {
     const className = 'has-overlay'
@@ -80,10 +94,14 @@ function App() {
   }, [activeImageKey])
 
   useEffect(() => {
-    if (activeImageKey !== 'intro') {
-      setIntroZoom(1)
+    if (activeGallery) {
+      setCurrentCardIndex(0)
+      setGalleryComplete(false)
+      setIsCardExiting(false)
+      setIsTransitioning(false)
+      touchStartXRef.current = null
     }
-  }, [activeImageKey])
+  }, [activeGallery])
 
   const navigateTo = (nextKey) => {
     setHistoryStack((prev) => [...prev, activeImageKey])
@@ -104,9 +122,80 @@ function App() {
     })
   }
 
+  const awardCarrotForIndex = (index) => {
+    if (!isKidsGamified || !activeImageKey || index < 0) return
+
+    const awarded = awardedMap[activeImageKey] ?? []
+    if (awarded.includes(index)) return
+
+    setCarrots((prev) => prev + 1)
+    setAwardedMap((prev) => ({
+      ...prev,
+      [activeImageKey]: [...awarded, index],
+    }))
+    setCarrotPulse(true)
+    window.setTimeout(() => setCarrotPulse(false), 600)
+  }
+
+  useEffect(() => {
+    if (isKidsGamified && activeGallery && !galleryComplete) {
+      awardCarrotForIndex(currentCardIndex)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCardIndex, isKidsGamified, activeImageKey, galleryComplete])
+
+  const advanceCard = () => {
+    if (isTransitioning || galleryComplete) return
+
+    if (currentCardIndex >= galleryImages.length - 1) {
+      if (isKidsGamified) {
+        setGalleryComplete(true)
+      }
+      return
+    }
+
+    const nextIndex = currentCardIndex + 1
+    setIsTransitioning(true)
+    setIsCardExiting(true)
+
+    window.setTimeout(() => {
+      setCurrentCardIndex(nextIndex)
+      setIsCardExiting(false)
+      setIsTransitioning(false)
+    }, 420)
+  }
+
+  const retreatCard = () => {
+    if (isTransitioning || galleryComplete || currentCardIndex <= 0) return
+
+    setCurrentCardIndex((index) => index - 1)
+  }
+
+  const handleCarouselTouchStart = (event) => {
+    touchStartXRef.current = event.touches[0].clientX
+  }
+
+  const handleCarouselTouchEnd = (event) => {
+    if (touchStartXRef.current === null || isTransitioning) return
+
+    const deltaX = event.changedTouches[0].clientX - touchStartXRef.current
+    touchStartXRef.current = null
+
+    if (deltaX < -50) {
+      advanceCard()
+    } else if (deltaX > 50) {
+      retreatCard()
+    }
+  }
+
+  const handleReturnToMenu = () => {
+    setGalleryComplete(false)
+    handleBack()
+  }
+
   return (
     <div className="app">
-      {activeImageKey !== null ? (
+      {activeImageKey !== null && !galleryComplete ? (
         <button
           type="button"
           className="back-button"
@@ -136,7 +225,7 @@ function App() {
           <button
             type="button"
             className="cta-hitbox cta-hitbox--intro"
-            onClick={() => navigateTo('intro')}
+            onClick={() => navigateTo('introGallery')}
             aria-haspopup="dialog"
             aria-label="Mino'yu tanıyalım"
           />
@@ -154,46 +243,10 @@ function App() {
       {activeImage ? (
         <div className="intro-overlay" role="dialog" aria-modal="true">
           <img
-            className={`intro-image${activeImageKey === 'intro' ? ' intro-image--contain' : ''}${activeImageKey === 'family' ? ' intro-image--framed' : ''}`}
+            className={`intro-image${activeImageKey === 'family' ? ' intro-image--framed' : ''}`}
             src={activeImage.src}
             alt={activeImage.alt}
-            style={
-              activeImageKey === 'intro'
-                ? {
-                    transform: `scale(${introZoom})`,
-                  }
-                : undefined
-            }
           />
-
-          {activeImageKey === 'intro' ? (
-            <div className="intro-zoom-controls">
-              <button
-                type="button"
-                className="zoom-button"
-                onClick={() => setIntroZoom((zoom) => Math.max(1, zoom - 0.1))}
-                aria-label="Uzaklastir"
-              >
-                -
-              </button>
-              <button
-                type="button"
-                className="zoom-button"
-                onClick={() => setIntroZoom(1)}
-                aria-label="Sifirla"
-              >
-                1x
-              </button>
-              <button
-                type="button"
-                className="zoom-button"
-                onClick={() => setIntroZoom((zoom) => Math.min(2.5, zoom + 0.1))}
-                aria-label="Yakinlastir"
-              >
-                +
-              </button>
-            </div>
-          ) : null}
 
           {activeImageKey === 'play' ? (
             <div className="play-hitbox-layer">
@@ -243,19 +296,107 @@ function App() {
       ) : null}
 
       {activeGallery ? (
-        <div className="gallery-screen" role="dialog" aria-modal="true">
-          <h1 className="gallery-title">{activeGallery.title}</h1>
-          <div className="gallery-track" role="region" aria-label="Gorsel galerisi">
-            {galleryImages.map((src, index) => (
-              <div className="gallery-card" key={src}>
-                <img
-                  src={src}
-                  alt={`${activeGallery.title} ${index + 1}`}
-                />
+        <div
+          className={`gallery-screen${activeImageKey === 'introGallery' ? ' gallery-screen--intro' : ''}${isKidsGamified ? ' gallery-screen--kids' : ''}`}
+          role="dialog"
+          aria-modal="true"
+        >
+          <header className="gallery-header">
+            <h1 className="gallery-title">{activeGallery.title}</h1>
+            {isKidsGamified ? (
+              <>
+                <div
+                  className={`gallery-score${carrotPulse ? ' gallery-score--pulse' : ''}`}
+                >
+                  🥕 {carrots} Havuç 🥕
+                </div>
+                <p className="gallery-progress">
+                  Kart {currentCardIndex + 1} / {galleryImages.length}
+                </p>
+              </>
+            ) : activeImageKey !== 'introGallery' ? (
+              <div className="gallery-score">🥕 {carrots} Havuç 🥕</div>
+            ) : null}
+          </header>
+
+          {!galleryComplete ? (
+            <div className="gallery-main">
+              <div
+                className="carousel-viewport"
+                role="region"
+                aria-label="Gorsel galerisi"
+                onTouchStart={handleCarouselTouchStart}
+                onTouchEnd={handleCarouselTouchEnd}
+              >
+                <div className="carousel-stack">
+                  {galleryImages
+                    .slice(currentCardIndex)
+                    .map((src, stackIndex) => {
+                      const cardIndex = currentCardIndex + stackIndex
+                      const isTop = stackIndex === 0
+
+                      return (
+                        <div
+                          className={`carousel-card${isTop ? ' carousel-card--top' : ''}${isTop && isCardExiting ? ' carousel-card--exit' : ''}${!isTop ? ` carousel-card--behind carousel-card--behind-${stackIndex}` : ''}`}
+                          key={`${src}-${cardIndex}`}
+                          style={{ zIndex: galleryImages.length - stackIndex }}
+                        >
+                          <img
+                            src={src}
+                            alt={`${activeGallery.title} ${cardIndex + 1}`}
+                          />
+                        </div>
+                      )
+                    })}
+                </div>
               </div>
-            ))}
-          </div>
-          <p className="gallery-hint">Sağa ve sola kaydır</p>
+              <div className="carousel-controls">
+                <button
+                  type="button"
+                  className="carousel-nav"
+                  onClick={retreatCard}
+                  disabled={currentCardIndex === 0 || isTransitioning}
+                  aria-label="Onceki gorsel"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="carousel-nav"
+                  onClick={advanceCard}
+                  disabled={isTransitioning}
+                  aria-label="Sonraki gorsel"
+                >
+                  ›
+                </button>
+              </div>
+              <p className="gallery-hint">
+                {isKidsGamified
+                  ? 'Her görsel için 1 havuç — sola kaydır'
+                  : 'Sola veya sağa kaydır'}
+              </p>
+            </div>
+          ) : (
+            <div className="gallery-complete" role="status">
+              <div className="gallery-complete__emoji" aria-hidden="true">
+                🎉
+              </div>
+              <h2 className="gallery-complete__title">Tebrikler!</h2>
+              <p className="gallery-complete__text">
+                Tüm kartları tamamladın. Harika iş çıkardın!
+              </p>
+              <div className="gallery-score gallery-score--large">
+                🥕 {carrots} Havuç 🥕
+              </div>
+              <button
+                type="button"
+                className="gallery-complete__button"
+                onClick={handleReturnToMenu}
+              >
+                Önceki menüye dön
+              </button>
+            </div>
+          )}
         </div>
       ) : null}
     </div>
