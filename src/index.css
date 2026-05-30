@@ -539,6 +539,92 @@ body.has-overlay {
   }
 
   .kids-hitbox--communication {
-    top: 84%;
+    top: 83%;
+  }
+}
+
+.intro-image--family-menu {
+  object-fit: cover;
+  object-position: center top;
+}
+
+@supports (height: 100dvh) {
+  .intro-image--family-menu {
+    height: 100dvh;
+  }
+}
+
+@supports (height: 100svh) {
+  .intro-image--family-menu {
+    height: 100svh;
+  }
+}
+
+.family-hitbox-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.family-hitbox {
+  position: absolute;
+  left: 11%;
+  width: 78%;
+  height: 9.8%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.family-hitbox--class {
+  top: 48%;
+}
+
+.family-hitbox--hygiene {
+  top: 59%;
+}
+
+.family-hitbox--communication {
+  top: 70%;
+}
+
+@media (max-width: 480px) {
+  .family-hitbox {
+    left: 9%;
+    width: 82%;
+    height: 10.5%;
+  }
+
+  .family-hitbox--class {
+    top: 48%;
+  }
+
+  .family-hitbox--hygiene {
+    top: 59%;
+  }
+
+  .family-hitbox--communication {
+    top: 70%;
+  }
+}
+
+@media (min-width: 768px) {
+  .family-hitbox {
+    left: 20%;
+    width: 60%;
+    height: 9.3%;
+  }
+
+  .family-hitbox--class {
+    top: 48%;
+  }
+
+  .family-hitbox--hygiene {
+    top: 59%;
+  }
+
+  .family-hitbox--communication {
+    top: 70%;
   }
 }

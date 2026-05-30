@@ -60,6 +60,21 @@ const galleryMap = {
       'WhatsApp Image 2026-05-30 at 17.53.15.jpeg',
     ],
   },
+  familyClassGallery: {
+    title: 'Sınıf Kuralları',
+    folder: 'ailes%C4%B1n%C4%B1fkurallar%C4%B1',
+    files: ['ailesınıf1.jpeg', 'ailesınıf2.jpeg', 'ailesınıf3.jpeg'],
+  },
+  familyHygieneGallery: {
+    title: 'Hijyen Kuralları',
+    folder: 'ailehijyenkurallar%C4%B1',
+    files: ['ailehijyen1.jpeg', 'ailehijyen2.jpeg', 'ailehijyen3.jpeg'],
+  },
+  familyCommunicationGallery: {
+    title: 'İletişim Kuralları',
+    folder: 'aileileti%C5%9Fimkurallar%C4%B1',
+    files: ['aileiletişim1.jpeg', 'aileiletişim2.jpeg', 'aileiletişim3.jpeg'],
+  },
 }
 
 const buildGalleryImages = ({ folder, files, images }) =>
@@ -334,7 +349,7 @@ function App() {
       {activeImage ? (
         <div className="intro-overlay" role="dialog" aria-modal="true">
           <img
-            className={`intro-image${activeImageKey === 'family' ? ' intro-image--framed' : ''}`}
+            className={`intro-image${activeImageKey === 'family' ? ' intro-image--family-menu' : ''}`}
             src={activeImage.src}
             alt={activeImage.alt}
           />
@@ -361,7 +376,7 @@ function App() {
             </div>
           ) : null}
 
-          {activeImageKey === 'kids' || activeImageKey === 'family' ? (
+          {activeImageKey === 'kids' ? (
             <div className="kids-hitbox-layer">
               <button
                 type="button"
@@ -379,6 +394,29 @@ function App() {
                 type="button"
                 className="kids-hitbox kids-hitbox--communication"
                 onClick={() => navigateTo('communicationGallery')}
+                aria-label="Iletisim kurallari"
+              />
+            </div>
+          ) : null}
+
+          {activeImageKey === 'family' ? (
+            <div className="family-hitbox-layer">
+              <button
+                type="button"
+                className="family-hitbox family-hitbox--class"
+                onClick={() => navigateTo('familyClassGallery')}
+                aria-label="Aile sinif kurallari"
+              />
+              <button
+                type="button"
+                className="family-hitbox family-hitbox--hygiene"
+                onClick={() => navigateTo('familyHygieneGallery')}
+                aria-label="Aile hijyen kurallari"
+              />
+              <button
+                type="button"
+                className="family-hitbox family-hitbox--communication"
+                onClick={() => navigateTo('familyCommunicationGallery')}
                 aria-label="Iletisim kurallari"
               />
             </div>
