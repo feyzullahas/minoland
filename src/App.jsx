@@ -56,8 +56,8 @@ const galleryMap = {
       'WhatsApp Image 2026-05-30 at 16.54.37 (3).jpeg',
       'WhatsApp Image 2026-05-30 at 16.54.37 (4).jpeg',
       'WhatsApp Image 2026-05-30 at 16.54.37 (5).jpeg',
-      'WhatsApp Image 2026-05-30 at 16.54.37 (6).jpeg',
       'WhatsApp Image 2026-05-30 at 16.54.38.jpeg',
+      'WhatsApp Image 2026-05-30 at 17.53.15.jpeg',
     ],
   },
 }
@@ -68,19 +68,25 @@ const buildGalleryImages = ({ folder, files, images }) =>
 function App() {
   const [activeImageKey, setActiveImageKey] = useState(null)
   const [historyStack, setHistoryStack] = useState([])
-  const [carrots, setCarrots] = useState(0)
-  const [awardedMap, setAwardedMap] = useState({})
+  const [galleryProgress, setGalleryProgress] = useState({
+    galleryKey: null,
+    viewed: [],
+    carrots: 0,
+  })
   const [galleryComplete, setGalleryComplete] = useState(false)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [carrotPulse, setCarrotPulse] = useState(false)
-  const [isCardExiting, setIsCardExiting] = useState(false)
+  const [cardTransition, setCardTransition] = useState(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const CARD_ANIM_MS = 420
   const touchStartXRef = useRef(null)
   const activeImage = activeImageKey ? imageMap[activeImageKey] : null
   const activeGallery = galleryMap[activeImageKey] ?? null
   const galleryImages = activeGallery ? buildGalleryImages(activeGallery) : []
   const isKidsGamified =
     Boolean(activeGallery?.gamified) && historyStack.includes('kids')
+  const carrots =
+    galleryProgress.galleryKey === activeImageKey ? galleryProgress.carrots : 0
 
   useEffect(() => {
     const className = 'has-overlay'
@@ -94,17 +100,50 @@ function App() {
   }, [activeImageKey])
 
   useEffect(() => {
-    if (activeGallery) {
-      setCurrentCardIndex(0)
-      setGalleryComplete(false)
-      setIsCardExiting(false)
-      setIsTransitioning(false)
-      touchStartXRef.current = null
-    }
-  }, [activeGallery])
+    if (!activeGallery) return
+
+    setCurrentCardIndex(0)
+    setGalleryComplete(false)
+    setCardTransition(null)
+    setIsTransitioning(false)
+    touchStartXRef.current = null
+
+  }, [activeImageKey, isKidsGamified, activeGallery])
+
+  const awardCarrotForIndex = (index) => {
+    if (!isKidsGamified || !activeImageKey) return
+
+    setGalleryProgress((prev) => {
+      if (prev.galleryKey !== activeImageKey) return prev
+      if (prev.viewed.includes(index)) return prev
+
+      setCarrotPulse(true)
+      window.setTimeout(() => setCarrotPulse(false), 600)
+
+      return {
+        galleryKey: activeImageKey,
+        viewed: [...prev.viewed, index],
+        carrots: prev.carrots + 1,
+      }
+    })
+  }
 
   const navigateTo = (nextKey) => {
-    setHistoryStack((prev) => [...prev, activeImageKey])
+    const nextStack = [...historyStack, activeImageKey]
+    const enteringKidsGallery =
+      Boolean(galleryMap[nextKey]?.gamified) && nextStack.includes('kids')
+
+    if (enteringKidsGallery) {
+      setGalleryProgress({
+        galleryKey: nextKey,
+        viewed: [],
+        carrots: 0,
+      })
+      setCurrentCardIndex(0)
+      setGalleryComplete(false)
+    }
+
+    setHistoryStack(nextStack)
     setActiveImageKey(nextKey)
   }
 
@@ -122,53 +161,105 @@ function App() {
     })
   }
 
-  const awardCarrotForIndex = (index) => {
-    if (!isKidsGamified || !activeImageKey || index < 0) return
-
-    const awarded = awardedMap[activeImageKey] ?? []
-    if (awarded.includes(index)) return
-
-    setCarrots((prev) => prev + 1)
-    setAwardedMap((prev) => ({
-      ...prev,
-      [activeImageKey]: [...awarded, index],
-    }))
-    setCarrotPulse(true)
-    window.setTimeout(() => setCarrotPulse(false), 600)
-  }
-
-  useEffect(() => {
-    if (isKidsGamified && activeGallery && !galleryComplete) {
-      awardCarrotForIndex(currentCardIndex)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCardIndex, isKidsGamified, activeImageKey, galleryComplete])
-
   const advanceCard = () => {
     if (isTransitioning || galleryComplete) return
 
     if (currentCardIndex >= galleryImages.length - 1) {
       if (isKidsGamified) {
+        awardCarrotForIndex(currentCardIndex)
         setGalleryComplete(true)
       }
       return
     }
 
+    awardCarrotForIndex(currentCardIndex)
+
     const nextIndex = currentCardIndex + 1
     setIsTransitioning(true)
-    setIsCardExiting(true)
+    setCardTransition({
+      direction: 'forward',
+      fromIndex: currentCardIndex,
+      toIndex: nextIndex,
+    })
 
     window.setTimeout(() => {
       setCurrentCardIndex(nextIndex)
-      setIsCardExiting(false)
+      setCardTransition(null)
       setIsTransitioning(false)
-    }, 420)
+    }, CARD_ANIM_MS)
   }
 
   const retreatCard = () => {
     if (isTransitioning || galleryComplete || currentCardIndex <= 0) return
 
-    setCurrentCardIndex((index) => index - 1)
+    const prevIndex = currentCardIndex - 1
+    setIsTransitioning(true)
+    setCardTransition({
+      direction: 'back',
+      fromIndex: currentCardIndex,
+      toIndex: prevIndex,
+    })
+
+    window.setTimeout(() => {
+      setCurrentCardIndex(prevIndex)
+      setCardTransition(null)
+      setIsTransitioning(false)
+    }, CARD_ANIM_MS)
+  }
+
+  const renderCarouselCards = () => {
+    if (cardTransition?.direction === 'back') {
+      const { fromIndex, toIndex } = cardTransition
+      return (
+        <>
+          <div
+            className="carousel-card carousel-card--top carousel-card--enter-left"
+            key={`enter-${toIndex}`}
+            style={{ zIndex: galleryImages.length }}
+          >
+            <img
+              src={galleryImages[toIndex]}
+              alt={`${activeGallery.title} ${toIndex + 1}`}
+            />
+          </div>
+          <div
+            className="carousel-card carousel-card--top carousel-card--exit-right"
+            key={`exit-${fromIndex}`}
+            style={{ zIndex: galleryImages.length + 1 }}
+          >
+            <img
+              src={galleryImages[fromIndex]}
+              alt={`${activeGallery.title} ${fromIndex + 1}`}
+            />
+          </div>
+        </>
+      )
+    }
+
+    const stackStartIndex =
+      cardTransition?.direction === 'forward'
+        ? cardTransition.fromIndex
+        : currentCardIndex
+
+    return galleryImages.slice(stackStartIndex).map((src, stackIndex) => {
+      const cardIndex = stackStartIndex + stackIndex
+      const isTop = stackIndex === 0
+      const isExitingForward =
+        isTop && cardTransition?.direction === 'forward'
+
+      return (
+        <div
+          className={`carousel-card${isTop ? ' carousel-card--top' : ''}${isExitingForward ? ' carousel-card--exit-left' : ''}${!isTop ? ` carousel-card--behind carousel-card--behind-${stackIndex}` : ''}`}
+          key={`${src}-${cardIndex}`}
+          style={{ zIndex: galleryImages.length - stackIndex }}
+        >
+          <img
+            src={src}
+            alt={`${activeGallery.title} ${cardIndex + 1}`}
+          />
+        </div>
+      )
+    })
   }
 
   const handleCarouselTouchStart = (event) => {
@@ -297,27 +388,27 @@ function App() {
 
       {activeGallery ? (
         <div
-          className={`gallery-screen${activeImageKey === 'introGallery' ? ' gallery-screen--intro' : ''}${isKidsGamified ? ' gallery-screen--kids' : ''}`}
+          className={`gallery-screen${activeImageKey === 'introGallery' ? ' gallery-screen--intro' : ''}${isKidsGamified ? ' gallery-screen--kids' : ''}${galleryComplete ? ' gallery-screen--complete' : ''}`}
           role="dialog"
           aria-modal="true"
         >
-          <header className="gallery-header">
-            <h1 className="gallery-title">{activeGallery.title}</h1>
-            {isKidsGamified ? (
-              <>
-                <div
-                  className={`gallery-score${carrotPulse ? ' gallery-score--pulse' : ''}`}
-                >
-                  🥕 {carrots} Havuç 🥕
-                </div>
-                <p className="gallery-progress">
-                  Kart {currentCardIndex + 1} / {galleryImages.length}
-                </p>
-              </>
-            ) : activeImageKey !== 'introGallery' ? (
-              <div className="gallery-score">🥕 {carrots} Havuç 🥕</div>
-            ) : null}
-          </header>
+          {!galleryComplete ? (
+            <header className="gallery-header">
+              <h1 className="gallery-title">{activeGallery.title}</h1>
+              {isKidsGamified ? (
+                <>
+                  <div
+                    className={`gallery-score${carrotPulse ? ' gallery-score--pulse' : ''}`}
+                  >
+                    🥕 {carrots}
+                  </div>
+                  <p className="gallery-progress">
+                    Kart {currentCardIndex + 1} / {galleryImages.length}
+                  </p>
+                </>
+              ) : null}
+            </header>
+          ) : null}
 
           {!galleryComplete ? (
             <div className="gallery-main">
@@ -328,27 +419,7 @@ function App() {
                 onTouchStart={handleCarouselTouchStart}
                 onTouchEnd={handleCarouselTouchEnd}
               >
-                <div className="carousel-stack">
-                  {galleryImages
-                    .slice(currentCardIndex)
-                    .map((src, stackIndex) => {
-                      const cardIndex = currentCardIndex + stackIndex
-                      const isTop = stackIndex === 0
-
-                      return (
-                        <div
-                          className={`carousel-card${isTop ? ' carousel-card--top' : ''}${isTop && isCardExiting ? ' carousel-card--exit' : ''}${!isTop ? ` carousel-card--behind carousel-card--behind-${stackIndex}` : ''}`}
-                          key={`${src}-${cardIndex}`}
-                          style={{ zIndex: galleryImages.length - stackIndex }}
-                        >
-                          <img
-                            src={src}
-                            alt={`${activeGallery.title} ${cardIndex + 1}`}
-                          />
-                        </div>
-                      )
-                    })}
-                </div>
+                <div className="carousel-stack">{renderCarouselCards()}</div>
               </div>
               <div className="carousel-controls">
                 <button
@@ -377,24 +448,23 @@ function App() {
               </p>
             </div>
           ) : (
-            <div className="gallery-complete" role="status">
-              <div className="gallery-complete__emoji" aria-hidden="true">
-                🎉
+            <div
+              className="gallery-complete"
+              role="status"
+              aria-label="Kategori tamamlandi"
+            >
+              <div className="gallery-complete__panel">
+                <div className="gallery-score gallery-score--large">
+                  🥕 {carrots}
+                </div>
+                <button
+                  type="button"
+                  className="gallery-complete__button"
+                  onClick={handleReturnToMenu}
+                >
+                  Önceki menüye dön
+                </button>
               </div>
-              <h2 className="gallery-complete__title">Tebrikler!</h2>
-              <p className="gallery-complete__text">
-                Tüm kartları tamamladın. Harika iş çıkardın!
-              </p>
-              <div className="gallery-score gallery-score--large">
-                🥕 {carrots} Havuç 🥕
-              </div>
-              <button
-                type="button"
-                className="gallery-complete__button"
-                onClick={handleReturnToMenu}
-              >
-                Önceki menüye dön
-              </button>
             </div>
           )}
         </div>
