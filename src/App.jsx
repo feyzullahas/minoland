@@ -112,6 +112,7 @@ function App() {
   const [carrotPulse, setCarrotPulse] = useState(false)
   const [cardTransition, setCardTransition] = useState(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [showMascot, setShowMascot] = useState(false)
   const CARD_ANIM_MS = 420
   const touchStartXRef = useRef(null)
   const activeImage = activeImageKey ? imageMap[activeImageKey] : null
@@ -140,6 +141,7 @@ function App() {
     setGalleryComplete(false)
     setCardTransition(null)
     setIsTransitioning(false)
+    setShowMascot(false)
     touchStartXRef.current = null
 
   }, [activeImageKey, isKidsGamified, activeGallery])
@@ -207,6 +209,7 @@ function App() {
     }
 
     awardCarrotForIndex(currentCardIndex)
+    setShowMascot(false)
 
     const nextIndex = currentCardIndex + 1
     setIsTransitioning(true)
@@ -227,6 +230,7 @@ function App() {
     if (isTransitioning || galleryComplete || currentCardIndex <= 0) return
 
     const prevIndex = currentCardIndex - 1
+    setShowMascot(false)
     setIsTransitioning(true)
     setCardTransition({
       direction: 'back',
@@ -501,26 +505,43 @@ function App() {
                 onTouchEnd={handleCarouselTouchEnd}
               >
                 <div className="carousel-stack">{renderCarouselCards()}</div>
+                {isKidsGamified && showMascot ? (
+                  <div className="mascot-overlay" onClick={() => setShowMascot(false)}>
+                    <img src="/maskot.png" alt="Mino maskot" className="mascot-img" />
+                  </div>
+                ) : null}
               </div>
               <div className="carousel-controls">
-                <button
-                  type="button"
-                  className="carousel-nav"
-                  onClick={retreatCard}
-                  disabled={currentCardIndex === 0 || isTransitioning}
-                  aria-label="Onceki gorsel"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  className="carousel-nav"
-                  onClick={advanceCard}
-                  disabled={isTransitioning}
-                  aria-label="Sonraki gorsel"
-                >
-                  ›
-                </button>
+                {isKidsGamified ? (
+                  <button
+                    type="button"
+                    className="eye-button"
+                    onClick={() => setShowMascot((v) => !v)}
+                    aria-label="Maskotu göster"
+                  >
+                    {showMascot ? '🙈' : '👁️'}
+                  </button>
+                ) : null}
+                <div className="carousel-nav-row">
+                  <button
+                    type="button"
+                    className="carousel-nav"
+                    onClick={retreatCard}
+                    disabled={currentCardIndex === 0 || isTransitioning}
+                    aria-label="Onceki gorsel"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="carousel-nav"
+                    onClick={advanceCard}
+                    disabled={isTransitioning}
+                    aria-label="Sonraki gorsel"
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
               <p className="gallery-hint">
                 {isKidsGamified
