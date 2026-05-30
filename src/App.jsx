@@ -13,6 +13,10 @@ const imageMap = {
     src: '/aileleriçin.png',
     alt: 'Aileler icin',
   },
+  teachers: {
+    src: '/%C3%B6%C4%9Fretmenleri%C3%A7in.png',
+    alt: 'Ogretmenler icin',
+  },
 }
 
 const galleryMap = {
@@ -74,6 +78,21 @@ const galleryMap = {
     title: 'İletişim Kuralları',
     folder: 'aileileti%C5%9Fimkurallar%C4%B1',
     files: ['aileiletişim1.jpeg', 'aileiletişim2.jpeg', 'aileiletişim3.jpeg'],
+  },
+  teacherClassGallery: {
+    title: 'Sınıf Kuralları',
+    folder: '%C3%B6%C4%9Fretmens%C4%B1n%C4%B1f',
+    files: ['öğretmensınıf1.jpeg', 'öğretmensınıf2.jpeg', 'öğretmensınıf3.jpeg'],
+  },
+  teacherHygieneGallery: {
+    title: 'Hijyen Kuralları',
+    folder: '%C3%B6%C4%9Fretmenhijyen',
+    files: ['öğretmenhijyen1.jpeg', 'öğretmenhijyen2.jpeg', 'öğretmenhijyen3.jpeg'],
+  },
+  teacherCommunicationGallery: {
+    title: 'İletişim Kuralları',
+    folder: '%C3%B6%C4%9Fretmenileti%C5%9Fim',
+    files: ['öğretmeniletişim1.jpeg', 'öğretmeniletişim2.jpeg', 'öğretmeniletişim3.jpeg'],
   },
 }
 
@@ -349,7 +368,7 @@ function App() {
       {activeImage ? (
         <div className="intro-overlay" role="dialog" aria-modal="true">
           <img
-            className={`intro-image${activeImageKey === 'family' ? ' intro-image--family-menu' : ''}`}
+            className={`intro-image${activeImageKey === 'family' ? ' intro-image--family-menu' : ''}${activeImageKey === 'teachers' ? ' intro-image--teachers-menu' : ''}`}
             src={activeImage.src}
             alt={activeImage.alt}
           />
@@ -371,6 +390,7 @@ function App() {
               <button
                 type="button"
                 className="play-hitbox play-hitbox--teachers"
+                onClick={() => navigateTo('teachers')}
                 aria-label="Ogretmenler icin"
               />
             </div>
@@ -418,6 +438,29 @@ function App() {
                 className="family-hitbox family-hitbox--communication"
                 onClick={() => navigateTo('familyCommunicationGallery')}
                 aria-label="Iletisim kurallari"
+              />
+            </div>
+          ) : null}
+
+          {activeImageKey === 'teachers' ? (
+            <div className="teacher-hitbox-layer">
+              <button
+                type="button"
+                className="teacher-hitbox teacher-hitbox--class"
+                onClick={() => navigateTo('teacherClassGallery')}
+                aria-label="Ogretmen sinif kurallari"
+              />
+              <button
+                type="button"
+                className="teacher-hitbox teacher-hitbox--hygiene"
+                onClick={() => navigateTo('teacherHygieneGallery')}
+                aria-label="Ogretmen hijyen kurallari"
+              />
+              <button
+                type="button"
+                className="teacher-hitbox teacher-hitbox--communication"
+                onClick={() => navigateTo('teacherCommunicationGallery')}
+                aria-label="Ogretmen iletisim kurallari"
               />
             </div>
           ) : null}
