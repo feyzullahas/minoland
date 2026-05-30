@@ -113,6 +113,7 @@ function App() {
   const [cardTransition, setCardTransition] = useState(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showMascot, setShowMascot] = useState(false)
+  const [showAbout, setShowAbout] = useState(false)
   const CARD_ANIM_MS = 420
   const touchStartXRef = useRef(null)
   const activeImage = activeImageKey ? imageMap[activeImageKey] : null
@@ -366,6 +367,36 @@ function App() {
             aria-haspopup="dialog"
             aria-label="Oyuna basla"
           />
+
+          <button
+            type="button"
+            className="about-button"
+            onClick={() => setShowAbout(true)}
+            aria-label="Hakkımızda"
+            title="Hakkımızda"
+          >
+            ℹ️
+          </button>
+
+          {showAbout ? (
+            <div className="about-modal-overlay" onClick={() => setShowAbout(false)}>
+              <div className="about-modal-content" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="about-modal-close"
+                  onClick={() => setShowAbout(false)}
+                >
+                  ✕
+                </button>
+                <h2>Proje yapımcıları:</h2>
+                <ul className="creators-list">
+                  <li>Sedat Erez</li>
+                  <li>Samet Sizgen</li>
+                  <li>Muhammed Dal</li>
+                </ul>
+              </div>
+            </div>
+          ) : null}
         </>
       ) : null}
 
